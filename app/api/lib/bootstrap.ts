@@ -144,8 +144,10 @@ const TABLES: string[] = [
     \`kind\` ENUM('convocation','rappel','sondage','annonce','reponse') NOT NULL DEFAULT 'annonce',
     \`content\` TEXT NOT NULL,
     \`status\` ENUM('pending','sent','delivered','read','failed','requeued') NULL DEFAULT NULL,
-    \`statusLog\` JSON NOT NULL DEFAULT '[]',
-    \`buttons\` JSON NOT NULL DEFAULT '[]',
+    -- MySQL 8 refuse un défaut littéral sur JSON : la forme DEFAULT (expr)
+    -- est la seule acceptée par MySQL 8.0.13+ ET MariaDB 10.2+.
+    \`statusLog\` JSON NOT NULL DEFAULT ('[]'),
+    \`buttons\` JSON NOT NULL DEFAULT ('[]'),
     \`createdAt\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (\`id\`),
     KEY \`messages_tenantId_idx\` (\`tenantId\`),
@@ -171,29 +173,52 @@ const TABLES: string[] = [
 
 let started: Promise<void> | undefined;
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function initOnce() {
+  const pool = getPool();
+  for (const ddl of TABLES) {
+    await pool.query(ddl);
+  }
+  await seedIfEmpty();
+  await ensureDemoUser();
+}
+
 /**
  * Crée les tables si besoin, insère les données de démo et le coach de démo.
- * Tolérant aux pannes : une base indisponible ne doit jamais empêcher le
- * serveur de démarrer (l'UI affichera l'erreur côté tRPC).
+ *
+ * Réessaie avec un backoff : sur Railway le réseau privé (`*.railway.internal`)
+ * met un instant à répondre après le démarrage du conteneur, et la base peut
+ * encore être en train de démarrer. Tolérant aux pannes : une base indisponible
+ * ne doit jamais empêcher le serveur de démarrer (l'UI affichera l'erreur
+ * côté tRPC).
  */
-export function bootstrapDatabase(): Promise<void> {
+export function bootstrapDatabase(attempts = 6): Promise<void> {
   if (started) return started;
 
   started = (async () => {
-    try {
-      const pool = getPool();
-      for (const ddl of TABLES) {
-        await pool.query(ddl);
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      try {
+        await initOnce();
+        console.log("[bootstrap] base de données prête.");
+        return;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (attempt === attempts) {
+          console.error(
+            "[bootstrap] initialisation de la base impossible après " +
+              `${attempts} tentatives — l'app démarre quand même.\n` +
+              "Vérifiez que la base tourne et que DATABASE_URL est correct.",
+            message,
+          );
+          return;
+        }
+        const delay = Math.min(1000 * 2 ** (attempt - 1), 15_000);
+        console.warn(
+          `[bootstrap] tentative ${attempt}/${attempts} échouée (${message}) — nouvel essai dans ${delay} ms.`,
+        );
+        await sleep(delay);
       }
-      await seedIfEmpty();
-      await ensureDemoUser();
-      console.log("[bootstrap] base de données prête.");
-    } catch (err) {
-      console.error(
-        "[bootstrap] initialisation de la base impossible — l'app démarre quand même.\n" +
-          "Vérifiez que MySQL/MariaDB tourne et que DATABASE_URL est correct.",
-        err instanceof Error ? err.message : err,
-      );
     }
   })();
 
