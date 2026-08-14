@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Squadly — shadcn tokens re-thémés sur la palette design.md §2 */
+    --background: 45 33% 97%;        /* paper #FAF9F4 */
+    --foreground: 152 29% 10%;       /* ink #12211A */
+    --card: 0 0% 100%;
+    --card-foreground: 152 29% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 152 29% 10%;
+    --primary: 142 76% 36%;          /* pitch #16A34A */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 135 48% 95%;        /* mist #EDF6EF */
+    --secondary-foreground: 149 47% 25%; /* pitch-dark */
+    --muted: 135 48% 95%;
+    --muted-foreground: 150 12% 35%; /* ink-soft #51645A */
+    --accent: 80 89% 55%;            /* lime #A3E635 */
+    --accent-foreground: 152 29% 10%;
+    --destructive: 6 100% 67%;       /* coral #FF6B57 */
+    --destructive-foreground: 0 0% 100%;
+    --border: 100 14% 90%;           /* line #E4E9E1 */
+    --input: 100 14% 90%;
+    --ring: 142 76% 36%;
+    --radius: 0.875rem;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 152 29% 10%;
+    --sidebar-primary: 142 76% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 135 48% 95%;
+    --sidebar-accent-foreground: 149 47% 25%;
+    --sidebar-border: 100 14% 90%;
+    --sidebar-ring: 142 76% 36%;
+  }
+
+  .dark {
+    --background: 152 56% 11%;       /* pine #0C2B1C */
+    --foreground: 45 33% 97%;
+    --card: 150 53% 15%;             /* pine-800 */
+    --card-foreground: 45 33% 97%;
+    --popover: 150 53% 15%;
+    --popover-foreground: 45 33% 97%;
+    --primary: 142 76% 36%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 150 53% 15%;
+    --secondary-foreground: 45 33% 97%;
+    --muted: 150 53% 15%;
+    --muted-foreground: 144 12% 59%;
+    --accent: 80 89% 55%;
+    --accent-foreground: 152 29% 10%;
+    --destructive: 6 100% 67%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 150 40% 20%;
+    --input: 150 40% 20%;
+    --ring: 80 89% 55%;
+    --sidebar-background: 152 56% 11%;
+    --sidebar-foreground: 45 33% 97%;
+    --sidebar-primary: 142 76% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 150 53% 15%;
+    --sidebar-accent-foreground: 45 33% 97%;
+    --sidebar-border: 150 40% 20%;
+    --sidebar-ring: 80 89% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3 {
+    @apply font-display;
+    letter-spacing: -0.02em;
+  }
+  /* Chiffres tabulaires pour les compteurs temps réel */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  ::selection {
+    background: rgba(163, 230, 53, 0.45);
+  }
+}
+
+@layer utilities {
+  /* Motif lignes de terrain en filigrane sur fonds pine */
+  .bg-field-pattern {
+    background-image: url('/pattern-field.svg');
+    background-size: 800px 800px;
+  }
+  /* Même filigrane par-dessus le dégradé pitch — une seule propriété
+     background-image, sinon les deux utilitaires s'écrasent l'un l'autre. */
+  .bg-pitch-field {
+    background-image: url('/pattern-field.svg'),
+      linear-gradient(135deg, #16a34a 0%, #0c2b1c 100%);
+    background-size: 800px 800px, cover;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .pause-on-hover:hover .animate-marquee {
+    animation-play-state: paused;
+  }
+}
+
+/* Keyframes utilisées en style inline (hors utilities Tailwind) */
+@keyframes floaty {
+  0%, 100% { transform: translateY(-6px); }
+  50% { transform: translateY(6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-marquee, .animate-floaty, .animate-pulse-soft {
+    animation: none !important;
+  }
+}
